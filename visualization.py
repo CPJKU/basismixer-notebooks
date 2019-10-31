@@ -28,7 +28,7 @@ data.init()
 
 LOGGER = logging.getLogger(__name__)
 
-OGG_URL_BASE = 'https://spocs.duckdns.org/vienna_4x22/'
+OGG_URL_BASE = 'https://basismixer.cp.jku.at/static/vienna4x22/'
 # PERF_CODEC = pc.PerformanceCodec(pc.TimeCodec(), pc.NotewiseDynamicsCodec())
 PERF_CODEC = pc.PerformanceCodec(pc.TimeCodec(normalization='bp_standardized'),
                                  pc.OnsetwiseDecompositionDynamicsCodec())
