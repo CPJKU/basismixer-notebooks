@@ -1,0 +1,23 @@
+name: basismixer
+
+channels:
+  - defaults
+  - pytorch
+
+dependencies:
+  - python=3
+  - cpuonly
+  - pytorch-cpu
+  - numpy
+  - scipy
+  - matplotlib
+  - ipython
+  - jupyter
+  - pip
+  - tqdm
+
+  - pip:
+    - appdirs
+    - soundfile
+    - partitura
+    - git+https://github.com/OFAI/basismixer.git@develop
