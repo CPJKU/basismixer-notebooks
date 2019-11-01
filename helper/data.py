@@ -50,7 +50,7 @@ def get_datasetdir():
         return None
 
     
-def init():
+def init_dataset():
     global DATASET_DIR, PIECES, PERFORMERS, SCORE_PERFORMANCE_PAIRS
 
     status = widgets.Output()
@@ -97,4 +97,4 @@ def init():
     PERFORMERS = sorted(set(performers))
 
 if __name__ == '__main__':
-    init()
+    init_dataset()

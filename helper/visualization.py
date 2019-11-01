@@ -21,16 +21,13 @@ import partitura
 from partitura.utils import partition
 import basismixer
 import basismixer.performance_codec as pc
-import data
-
-# ensure we have the vienna4x22 corpus
-data.init()
+import helper.data as data
 
 LOGGER = logging.getLogger(__name__)
 
 OGG_URL_BASE = 'https://basismixer.cp.jku.at/static/vienna4x22/'
 # PERF_CODEC = pc.PerformanceCodec(pc.TimeCodec(), pc.NotewiseDynamicsCodec())
-PERF_CODEC = pc.PerformanceCodec(pc.TimeCodec(normalization='bp_standardized'),
+PERF_CODEC = pc.PerformanceCodec(pc.TimeCodec(normalization='beat_period_standardized'),
                                  pc.OnsetwiseDecompositionDynamicsCodec())
 
 plt.rcParams.update({'font.size': 8})
