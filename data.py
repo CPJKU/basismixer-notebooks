@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
 import os
+import json
 import argparse
 import tarfile
 import io
 from urllib.request import urlopen
 import re
+import warnings
 
 from IPython.display import display, HTML, Audio, update_display
 import ipywidgets as widgets
@@ -14,15 +16,40 @@ import appdirs
 from basismixer.utils import pair_files
 
 REPO_NAME = 'vienna4x22_rematched'
-DATASET_URL = 'https://jobim.ofai.at/gitlab/accompanion/{}/repository/archive'.format(REPO_NAME)
+DATASET_BRANCH = 'master'
+OWNER = 'OFAI'
+DATASET_URL = 'https://api.github.com/repos/{}/{}/tarball/{}'.format(OWNER, REPO_NAME, DATASET_BRANCH)
+
+# oggs will be downloaded from here
 OGG_URL_BASE = 'https://spocs.duckdns.org/vienna_4x22/'
+
 TMP_DIR = appdirs.user_cache_dir('basismixer')
-# this is where our data set will be
-DATASET_DIR = os.path.join(TMP_DIR, '{}.git'.format(REPO_NAME))
+# DATASET_DIR will be set to the path of our data
+DATASET_DIR = None
 PIECES = ()
 PERFORMERS = ()
 SCORE_PERFORMANCE_PAIRS = None
 
+def get_datasetdir():
+    """Get the SHA of the latest commit and return the corresponding
+    datast directory path.
+    
+    """
+    commit_url = ('https://api.github.com/repos/{}/{}/commits/{}'
+                  .format(OWNER, REPO_NAME, DATASET_BRANCH))
+    try:
+
+        with urlopen(commit_url) as response:
+            commit = json.load(response)
+
+        repo_dirname = '{}-{}-{}'.format(OWNER, REPO_NAME, commit['sha'][:7])
+        return os.path.join(TMP_DIR, repo_dirname)
+        
+    except Exception as e:
+        warnings.warn('{} (url: {})'.format(e, commit_url))
+        return None
+
+    
 def init():
     global DATASET_DIR, PIECES, PERFORMERS, SCORE_PERFORMANCE_PAIRS
 
@@ -30,10 +57,9 @@ def init():
     display(status)
     status.clear_output()
 
-    # # assume we have the data to avoid download
-    # DATASET_DIR = '/tmp/vienna4x22_rematched.git'
+    DATASET_DIR = get_datasetdir()
     
-    if os.path.exists(DATASET_DIR):
+    if DATASET_DIR and os.path.exists(DATASET_DIR):
         status.append_stdout('Vienna 4x22 Corpus already downloaded.\n')
         status.append_stdout('Data is in {}'.format(DATASET_DIR))
     else:
@@ -69,3 +95,6 @@ def init():
                                if m])
     PIECES = sorted(set(pieces))
     PERFORMERS = sorted(set(performers))
+
+if __name__ == '__main__':
+    init()
