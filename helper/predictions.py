@@ -16,6 +16,7 @@ from basismixer.utils import load_pyc_bz, save_pyc_bz
 logging.basicConfig(level=logging.INFO)
 LOGGER = logging.getLogger(__name__)
 
+RNG = np.random.RandomState(1984)
 
 def construct_dataloaders(dataset_fn, batch_size=10,
                           valid_size=0.2):
@@ -34,7 +35,7 @@ def construct_dataloaders(dataset_fn, batch_size=10,
     
     # Split dataset in training and validation
     dataset_idx = np.arange(len(dataset))
-    rng.shuffle(dataset_idx)
+    RNG.shuffle(dataset_idx)
     len_valid = int(np.round(len(dataset) * valid_size))
     valid_idx = dataset_idx[0:len_valid]
     train_idx = dataset_idx[len_valid:]
