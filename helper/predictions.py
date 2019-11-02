@@ -98,7 +98,7 @@ def split_dataset(dataset, test_size=0.2, valid_size=0.2):
     dataset_idx = np.arange(n_pieces)
     RNG.shuffle(dataset_idx)
     len_test = int(n_pieces * test_size)
-    len_valid = int((n_pieces - len_test) * valid_size)
+    len_valid = np.maximum(int((n_pieces - len_test) * valid_size), 1)
 
     test_idxs = dataset_idx[:len_test]
     valid_idxs = dataset_idx[len_test:len_test + len_valid]
@@ -110,8 +110,12 @@ def split_dataset(dataset, test_size=0.2, valid_size=0.2):
           'Validation set:\t{0}\n'.format(len(valid_idxs)))
 
     train_set = ConcatDataset([dataset.datasets[i] for i in train_idxs])
+    print(train_idxs)
     valid_set = ConcatDataset([dataset.datasets[i] for i in valid_idxs])
+    print(valid_idxs)
     test_set = ConcatDataset([dataset.datasets[i] for i in test_idxs])
+    print(test_idxs)
+    print(len(train_set), len(valid_set), len(test_set))
 
     return train_set, valid_set, test_set
 
