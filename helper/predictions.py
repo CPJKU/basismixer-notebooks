@@ -4,11 +4,10 @@ import os
 
 import numpy as np
 import torch
-from torch.utils.data import DataLoader
-from torch.utils.data.sampler import SubsetRandomSampler
+from torch.utils.data import DataLoader, ConcatDataset
+# from torch.utils.data.sampler import SubsetRandomSampler
 
-from basismixer.predictive_models import (construct_model,
-                                          RecurrentModel,
+from basismixer.predictive_models import (construct_model as c_model,
                                           SupervisedTrainer,
                                           MSELoss)
 from basismixer.utils import load_pyc_bz, save_pyc_bz
@@ -55,29 +54,93 @@ def construct_dataloaders(dataset_fn, batch_size=10,
     
     return dataset, train_dataloader, valid_dataloader
 
-
-def train_model(model, config, train_loader, val_loader, out_dir):
-    # Get the configuration for the trainer
-    t_config = config['train_args']
-
-    # Name of the model
-    model_name = '-'.join(model.output_names) + '-' + model.input_type
-    # Create a directory for storing the model parameters
+def construct_model(config, in_names, out_names, out_dir):
+    model_cfg = config['model'].copy()
+    model_cfg['args']['input_names'] = in_names
+    model_cfg['args']['input_size'] = len(in_names)
+    model_cfg['args']['output_names'] = out_names
+    model_cfg['args']['output_size'] = len(out_names)
+    model_name = ('-'.join(out_names) +
+                  '-' + ('onsetwise' if config['onsetwise'] else 'notewise'))
     model_out_dir = os.path.join(out_dir, model_name)
     if not os.path.exists(model_out_dir):
         os.mkdir(model_out_dir)
-    # Loss function
+    # save model config for later saving model
+    config_out = os.path.join(model_out_dir, 'config.json')
+    LOGGER.info('Saving config in {0}'.format(config_out))
+    json.dump(jsonize_dict(model_cfg),
+              open(config_out, 'w'),
+              indent=2)
+    model = c_model(model_cfg)
+
+    return model, model_out_dir
+
+def setup_output_directory(out_dir='/tmp/trained_models'):
+    if not os.path.exists(out_dir):
+        os.mkdir(out_dir)
+    return out_dir
+
+def jsonize_dict(input_dict):
+    out_dict = dict()
+    for k, v in input_dict.items():
+        if isinstance(v, np.ndarray):
+            out_dict[k] = v.tolist()
+        elif isinstance(v, dict):
+            out_dict[k] = jsonize_dict(v)
+        else:
+            out_dict[k] = v
+    return out_dict
+
+def split_dataset(dataset, test_size=0.2, valid_size=0.2):
+
+    n_pieces = len(dataset.datasets)
+
+    dataset_idx = np.arange(n_pieces)
+    RNG.shuffle(dataset_idx)
+    len_test = int(n_pieces * test_size)
+    len_valid = int((n_pieces - len_test) * valid_size)
+
+    test_idxs = dataset_idx[:len_test]
+    valid_idxs = dataset_idx[len_test:len_test + len_valid]
+    train_idxs = dataset_idx[len_test + len_valid:]
+
+    print('Pieces per dataset\n' +
+          'Train set:\t{0}\n'.format(len(train_idxs)) +
+          'Test set:\t{0}\n'.format(len(test_idxs)) +
+          'Validation set:\t{0}\n'.format(len(valid_idxs)))
+
+    train_set = ConcatDataset([dataset.datasets[i] for i in train_idxs])
+    valid_set = ConcatDataset([dataset.datasets[i] for i in valid_idxs])
+    test_set = ConcatDataset([dataset.datasets[i] for i in test_idxs])
+
+    return train_set, valid_set, test_set
+
+
+
+def train_model(model, train_set, valid_set,
+                config, out_dir):
+    batch_size = config['train_args'].pop('batch_size')
+
+    #### Create train and validation data loaders #####
+    train_loader = DataLoader(train_set,
+                              batch_size=batch_size,
+                              shuffle=True)
+    valid_loader = DataLoader(valid_set,
+                              batch_size=batch_size,
+                              shuffle=False)
+
     loss = MSELoss()
-    # Initialize the optimizer
-    optimizer = torch.optim.Adam(model.parameters(), lr=t_config.pop('lr'))
-    # Create trainer for training model in a supervised way
+
+    ### Construct the optimizer ####
+    optim_name, optim_args = config['train_args']['optimizer']
+    optim = getattr(torch.optim, optim_name)
+    config['train_args']['optimizer'] = optim(model.parameters(), **optim_args)
+
     trainer = SupervisedTrainer(model=model,
                                 train_loss=loss,
-                                optimizer=optimizer,
                                 valid_loss=loss,
                                 train_dataloader=train_loader,
-                                valid_dataloader=val_loader,
-                                out_dir=model_out_dir,
-                                **t_config)
-    # train the mode
+                                valid_dataloader=valid_loader,
+                                out_dir=out_dir,
+                                **config['train_args'])
     trainer.train()
