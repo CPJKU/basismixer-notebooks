@@ -54,3 +54,30 @@ def construct_dataloaders(dataset_fn, batch_size=10,
                                   sampler=valid_sampler)
     
     return dataset, train_dataloader, valid_dataloader
+
+
+def train_model(model, config, train_loader, val_loader, out_dir):
+    # Get the configuration for the trainer
+    t_config = config['train_args']
+
+    # Name of the model
+    model_name = '-'.join(model.output_names) + '-' + model.input_type
+    # Create a directory for storing the model parameters
+    model_out_dir = os.path.join(out_dir, model_name)
+    if not os.path.exists(model_out_dir):
+        os.mkdir(model_out_dir)
+    # Loss function
+    loss = MSELoss()
+    # Initialize the optimizer
+    optimizer = torch.optim.Adam(model.parameters(), lr=t_config.pop('lr'))
+    # Create trainer for training model in a supervised way
+    trainer = SupervisedTrainer(model=model,
+                                train_loss=loss,
+                                optimizer=optimizer,
+                                valid_loss=loss,
+                                train_dataloader=train_loader,
+                                valid_dataloader=val_loader,
+                                out_dir=model_out_dir,
+                                **t_config)
+    # train the mode
+    trainer.train()
