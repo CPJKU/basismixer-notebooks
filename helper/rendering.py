@@ -16,7 +16,7 @@ from basismixer.performance_codec import get_performance_codec
 from basismixer.basisfunctions import make_basis
 
 
-def render_midi_file(midi_fn):
+def render_midi(midi_fn):
 
     with tempfile.NamedTemporaryFile() as out_file:
         cmd = ['timidity', '-E', 'F', 'reverb=0', 'F', 'chorus=0',
