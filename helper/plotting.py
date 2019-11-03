@@ -15,7 +15,7 @@ def plot_basis(basis, names, onsets=None, title=None):
     w = len(x)/30
     h = n_basis
 
-    fig, axs = plt.subplots(n_basis, sharex=True, sharey=True,
+    fig, axs = plt.subplots(n_basis, sharex=True,
                             gridspec_kw={'hspace': 0})
     if n_basis == 1:
         axs = [axs]
@@ -27,7 +27,7 @@ def plot_basis(basis, names, onsets=None, title=None):
         
     for i, name in enumerate(names):
         axs[i].fill_between(x, 0, basis[:, i], label=name)
-        axs[i].legend(frameon=False)
+        axs[i].legend(frameon=False, loc='upper left')
 
     fig.tight_layout()
 
