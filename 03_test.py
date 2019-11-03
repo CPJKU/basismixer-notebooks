@@ -76,6 +76,9 @@ def main():
         # )
     ]
     init_dataset() # download the corpus if necessary; set some variables
+
+    if data.DATASET_DIR is None:
+        return
     
     # path to the MusicXML and Match files
     xmlfolder = os.path.join(data.DATASET_DIR, 'musicxml')
