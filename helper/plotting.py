@@ -36,6 +36,20 @@ def plot_basis(basis, names, onsets=None, title=None):
 
     # fig.savefig(out_fn)
 
+def plot_predictions(predictions, targets):
+
+    param_names = predictions.dtype.names
+    n_params = len(param_names)
+    fig, axs = plt.subplots(n_params, sharex=True)
+
+    for i, pn in enumerate(param_names):
+        axs[i].plot(predictions[pn], color='firebrick',
+                    label='predictions')
+        axs[i].plot(targets[:, i], color='blue', label='targets')
+        axs[i].set_title(pn)
+        axs[i].legend(frameon=False)
+
+
 # def main():
 #     parser = argparse.ArgumentParser(description="Do something")
 #     parser.add_argument("file", help="some file")
