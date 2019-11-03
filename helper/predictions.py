@@ -18,43 +18,6 @@ LOGGER = logging.getLogger(__name__)
 
 RNG = np.random.RandomState(1984)
 
-# def construct_dataloaders(dataset_fn, batch_size=10,
-#                           valid_size=0.2):
-#     """
-#     Load a dataset and prepare DataLoaders for training and
-#     validation.
-#     """
-#     # load dataset
-#     data = load_pyc_bz(dataset_fn)
-#     # Dataset
-#     dataset = data['dataset']
-#     # Input names (basis functions)
-#     in_names = data['in_names']
-#     # Output names (expressive parameters)
-#     out_names = data['out_names']
-    
-#     # Split dataset in training and validation
-#     dataset_idx = np.arange(len(dataset))
-#     RNG.shuffle(dataset_idx)
-#     len_valid = int(np.round(len(dataset) * valid_size))
-#     valid_idx = dataset_idx[0:len_valid]
-#     train_idx = dataset_idx[len_valid:]
-    
-#     # Subset of the dataset for training
-#     train_sampler = SubsetRandomSampler(train_idx)
-#     # Subset of the dataset for validation
-#     valid_sampler = SubsetRandomSampler(valid_idx)
-#     LOGGER.info('Using {0} instances for')
-#     train_dataloader = DataLoader(dataset,
-#                                   batch_size=batch_size,
-#                                   # shuffle=True,
-#                                   sampler=train_sampler)
-#     valid_dataloader = DataLoader(dataset,
-#                                   batch_size=batch_size,
-#                                   sampler=valid_sampler)
-    
-#     return dataset, train_dataloader, valid_dataloader
-
 def construct_model(config, in_names, out_names, out_dir):
     model_cfg = config['model'].copy()
     model_cfg['args']['input_names'] = in_names
@@ -133,11 +96,6 @@ def split_datasets(datasets, test_size=0.2, valid_size=0.2):
     valid_idxs = dataset_idx[len_test:len_test + len_valid]
     train_idxs = dataset_idx[len_test + len_valid:]
 
-    # print('Pieces per dataset\n' +
-    #       'Train set:\t{0}\n'.format(len(train_idxs)) +
-    #       'Test set:\t{0}\n'.format(len(test_idxs)) +
-    #       'Validation set:\t{0}\n'.format(len(valid_idxs)))
-
     return (ConcatDataset([datasets[i] for i in train_idxs]),
             ConcatDataset([datasets[i] for i in valid_idxs]),
             ConcatDataset([datasets[i] for i in test_idxs]))
@@ -163,7 +121,8 @@ def train_model(model, train_set, valid_set,
     optim_name, optim_args = config['train_args']['optimizer']
     optim = getattr(torch.optim, optim_name)
     config['train_args']['optimizer'] = optim(model.parameters(), **optim_args)
-
+    train_args = config['train_args']
+    train_args.pop('seq_len', None)
     trainer = SupervisedTrainer(model=model,
                                 train_loss=loss,
                                 valid_loss=loss,

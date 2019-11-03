@@ -49,6 +49,8 @@ def plot_predictions(predictions, targets):
         axs[i].set_title(pn)
         axs[i].legend(frameon=False)
 
+    fig.tight_layout()
+
 
 # def main():
 #     parser = argparse.ArgumentParser(description="Do something")

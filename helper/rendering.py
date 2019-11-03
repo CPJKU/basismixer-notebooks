@@ -38,8 +38,12 @@ def compute_basis_from_xml(xml_fn, input_names):
 
     # Compute basis functions
     _basis, bf_names = make_basis(part, list(set([bf.split('.')[0] for bf in input_names])))
-    basis_idx = np.array([int(np.where(input_names == bf)[0]) for bf in bf_names])
     basis = np.zeros((len(_basis), len(input_names)))
-    basis[:, basis_idx] = _basis
+    for i, n in enumerate(input_names):
+        try:
+            ix = bf_names.index(n)
+        except ValueError:
+            continue
+        basis[:, i] = _basis[:, ix]
 
     return basis, part
