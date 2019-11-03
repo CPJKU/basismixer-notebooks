@@ -7,6 +7,7 @@ import os
 import glob
 import torch
 import numpy as np
+from basismixer.basisfunctions import make_basis
 
 def load_model(models_dir):
     models = []
@@ -29,3 +30,16 @@ def load_model(models_dir):
     full_model = FullPredictiveModel(models, input_names, output_names)
     
     return full_model
+
+def compute_basis_from_xml(xml_fn, input_names):
+    # Load MusicXML file
+    part = load_musicxml(xml_fn, force_note_ids=True)
+    expand_grace_notes(part)
+
+    # Compute basis functions
+    _basis, bf_names = make_basis(part, list(set([bf.split('.')[0] for bf in input_names])))
+    basis_idx = np.array([int(np.where(input_names == bf)[0]) for bf in bf_names])
+    basis = np.zeros((len(_basis), len(input_names)))
+    basis[:, basis_idx] = _basis
+
+    return basis, part
