@@ -7,6 +7,7 @@ import torch
 from torch.utils.data import DataLoader, ConcatDataset
 # from torch.utils.data.sampler import SubsetRandomSampler
 
+from partitura.utils import partition
 from basismixer.predictive_models import (construct_model as c_model,
                                           SupervisedTrainer,
                                           MSELoss)
@@ -17,42 +18,42 @@ LOGGER = logging.getLogger(__name__)
 
 RNG = np.random.RandomState(1984)
 
-def construct_dataloaders(dataset_fn, batch_size=10,
-                          valid_size=0.2):
-    """
-    Load a dataset and prepare DataLoaders for training and
-    validation.
-    """
-    # load dataset
-    data = load_pyc_bz(dataset_fn)
-    # Dataset
-    dataset = data['dataset']
-    # Input names (basis functions)
-    in_names = data['in_names']
-    # Output names (expressive parameters)
-    out_names = data['out_names']
+# def construct_dataloaders(dataset_fn, batch_size=10,
+#                           valid_size=0.2):
+#     """
+#     Load a dataset and prepare DataLoaders for training and
+#     validation.
+#     """
+#     # load dataset
+#     data = load_pyc_bz(dataset_fn)
+#     # Dataset
+#     dataset = data['dataset']
+#     # Input names (basis functions)
+#     in_names = data['in_names']
+#     # Output names (expressive parameters)
+#     out_names = data['out_names']
     
-    # Split dataset in training and validation
-    dataset_idx = np.arange(len(dataset))
-    RNG.shuffle(dataset_idx)
-    len_valid = int(np.round(len(dataset) * valid_size))
-    valid_idx = dataset_idx[0:len_valid]
-    train_idx = dataset_idx[len_valid:]
+#     # Split dataset in training and validation
+#     dataset_idx = np.arange(len(dataset))
+#     RNG.shuffle(dataset_idx)
+#     len_valid = int(np.round(len(dataset) * valid_size))
+#     valid_idx = dataset_idx[0:len_valid]
+#     train_idx = dataset_idx[len_valid:]
     
-    # Subset of the dataset for training
-    train_sampler = SubsetRandomSampler(train_idx)
-    # Subset of the dataset for validation
-    valid_sampler = SubsetRandomSampler(valid_idx)
-    LOGGER.info('Using {0} instances for')
-    train_dataloader = DataLoader(dataset,
-                                  batch_size=batch_size,
-                                  # shuffle=True,
-                                  sampler=train_sampler)
-    valid_dataloader = DataLoader(dataset,
-                                  batch_size=batch_size,
-                                  sampler=valid_sampler)
+#     # Subset of the dataset for training
+#     train_sampler = SubsetRandomSampler(train_idx)
+#     # Subset of the dataset for validation
+#     valid_sampler = SubsetRandomSampler(valid_idx)
+#     LOGGER.info('Using {0} instances for')
+#     train_dataloader = DataLoader(dataset,
+#                                   batch_size=batch_size,
+#                                   # shuffle=True,
+#                                   sampler=train_sampler)
+#     valid_dataloader = DataLoader(dataset,
+#                                   batch_size=batch_size,
+#                                   sampler=valid_sampler)
     
-    return dataset, train_dataloader, valid_dataloader
+#     return dataset, train_dataloader, valid_dataloader
 
 def construct_model(config, in_names, out_names, out_dir):
     model_cfg = config['model'].copy()
@@ -91,9 +92,36 @@ def jsonize_dict(input_dict):
             out_dict[k] = v
     return out_dict
 
-def split_dataset(dataset, test_size=0.2, valid_size=0.2):
+def split_datasets_by_piece(datasets, test_size=0.2, valid_size=0.2):
 
-    n_pieces = len(dataset.datasets)
+    by_piece = partition(lambda d: '_'.join(d.name.split('_')[:-1]), datasets)
+    pieces = list(by_piece.keys())
+    RNG.shuffle(pieces)
+
+    n_test = max(1, int(np.round(test_size*len(pieces))))
+    n_valid = max(1, int(np.round(valid_size*len(pieces))))
+    n_train = len(pieces) - n_test - n_valid
+
+    if n_train < 1:
+        raise Exception('Not enough pieces to split datasets according '
+                        'to the specified test/validation proportions')
+
+    test_pieces = pieces[:n_test]
+    valid_pieces = pieces[n_test:n_test+n_valid]
+    train_pieces = pieces[n_test+n_valid:]
+
+    test_set = [d for pd in [by_piece[p] for p in test_pieces] for d in pd]
+    valid_set = [d for pd in [by_piece[p] for p in valid_pieces] for d in pd]
+    train_set = [d for pd in [by_piece[p] for p in train_pieces] for d in pd]
+
+    return (ConcatDataset(train_set),
+            ConcatDataset(valid_set),
+            ConcatDataset(test_set))
+
+
+def split_datasets(datasets, test_size=0.2, valid_size=0.2):
+
+    n_pieces = len(datasets)
 
     dataset_idx = np.arange(n_pieces)
     RNG.shuffle(dataset_idx)
@@ -104,20 +132,15 @@ def split_dataset(dataset, test_size=0.2, valid_size=0.2):
     valid_idxs = dataset_idx[len_test:len_test + len_valid]
     train_idxs = dataset_idx[len_test + len_valid:]
 
-    print('Pieces per dataset\n' +
-          'Train set:\t{0}\n'.format(len(train_idxs)) +
-          'Test set:\t{0}\n'.format(len(test_idxs)) +
-          'Validation set:\t{0}\n'.format(len(valid_idxs)))
+    # print('Pieces per dataset\n' +
+    #       'Train set:\t{0}\n'.format(len(train_idxs)) +
+    #       'Test set:\t{0}\n'.format(len(test_idxs)) +
+    #       'Validation set:\t{0}\n'.format(len(valid_idxs)))
 
-    train_set = ConcatDataset([dataset.datasets[i] for i in train_idxs])
-    print(train_idxs)
-    valid_set = ConcatDataset([dataset.datasets[i] for i in valid_idxs])
-    print(valid_idxs)
-    test_set = ConcatDataset([dataset.datasets[i] for i in test_idxs])
-    print(test_idxs)
-    print(len(train_set), len(valid_set), len(test_set))
+    return (ConcatDataset([datasets[i] for i in train_idxs]),
+            ConcatDataset([datasets[i] for i in valid_idxs]),
+            ConcatDataset([datasets[i] for i in test_idxs]))
 
-    return train_set, valid_set, test_set
 
 
 
