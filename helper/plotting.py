@@ -3,6 +3,7 @@
 import numpy as np
 # import argparse
 import matplotlib.pyplot as plt
+from helper.visualization import make_plot
 
 def plot_basis(basis, names, onsets=None, title=None):
     n_basis = basis.shape[1]
@@ -36,20 +37,33 @@ def plot_basis(basis, names, onsets=None, title=None):
 
     # fig.savefig(out_fn)
 
-def plot_predictions(predictions, targets):
-
+def plot_predictions_and_targets(predictions, targets):
     param_names = predictions.dtype.names
     n_params = len(param_names)
     fig, axs = plt.subplots(n_params, sharex=True)
 
+    fig.set_size_inches(len(predictions) / 30, n_params)
     for i, pn in enumerate(param_names):
         axs[i].plot(predictions[pn], color='firebrick',
                     label='predictions')
-        axs[i].plot(targets[:, i], color='blue', label='targets')
+        if targets is not None:
+            axs[i].plot(targets[:, i], color='blue', label='targets')
         axs[i].set_title(pn)
-        axs[i].legend(frameon=False)
+        axs[i].legend(frameon=False, loc='upper left')
 
     fig.tight_layout()
+
+
+def plot_predictions(predictions):
+    param_names = predictions.dtype.names
+    fig, axs = plt.subplots(len(param_names),
+                            sharex=True,
+                            gridspec_kw={'hspace': 0.15})
+    plt.subplots_adjust(left=0.07, right=0.99, top=.99, bottom=0.1)
+
+    make_plot(fig, axs, predictions)
+    
+   
 
 
 # def main():

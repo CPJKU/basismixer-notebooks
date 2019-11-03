@@ -71,6 +71,18 @@ def sanitize_performed_part(ppart):
             n['sound_off'] == n['note_off']
 
 
+def post_process_predictions(predictions):
+    max_articulation = 1.5
+    max_bps = 1.5
+    max_timing = 0.2
+    predictions['articulation_log'] = np.clip(predictions['articulation_log'], -max_articulation, max_articulation)
+    predictions['velocity_dev'] = np.clip(predictions['velocity_dev'], 0, 0.8)
+    predictions['beat_period_standardized'] = np.clip(predictions['beat_period_standardized'], -max_bps, max_bps)
+    predictions['timing'] = np.clip(predictions['timing'], -max_timing, max_timing)
+    predictions['velocity_trend'][predictions['velocity_trend'] > 0.8] = 0.8
+
+
+
 def compute_basis_from_xml(xml_fn, input_names):
     # Load MusicXML file
     part = load_musicxml(xml_fn, force_note_ids=True)
