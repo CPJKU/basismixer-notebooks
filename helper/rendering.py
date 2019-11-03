@@ -1,28 +1,39 @@
+import json
+import os
+
+import torch
+import numpy as np
 import subprocess
+import soundfile
+import tempfile
+
+from IPython.display import display, Audio
 
 from partitura import save_performance_midi, load_musicxml
 from partitura.score import expand_grace_notes
 from basismixer.predictive_models import FullPredictiveModel, construct_model
 from basismixer.performance_codec import get_performance_codec
-import json
-import os
-import glob
-import torch
-import numpy as np
 from basismixer.basisfunctions import make_basis
 
-def render_midi_file(midi_fn, out_fn):
-    cmd = ['timidity', '-E', 'F', 'reverb=0', 'F', 'chorus=0', '-Ov', '-o', out_fn, midi_fn]
-    try:
-        ps = subprocess.run(cmd, stdout=subprocess.PIPE)
-        if ps.returncode != 0:
-            LOGGER.error('Command {} failed with code {}'
-                         .format(cmd, ps.returncode))
-            return
-    except FileNotFoundError as f:
-        LOGGER.error('Executing "{}" returned  {}.'
-                     .format(' '.join(cmd), f))
-        return
+
+def render_midi_file(midi_fn):
+
+    with tempfile.NamedTemporaryFile() as out_file:
+        cmd = ['timidity', '-E', 'F', 'reverb=0', 'F', 'chorus=0',
+               '--output-mono', '-Ov', '-o', out_file.name, midi_fn]
+        try:
+            ps = subprocess.run(cmd, stdout=subprocess.PIPE)
+            if ps.returncode != 0:
+                LOGGER.error('Command {} failed with code {}'
+                             .format(cmd, ps.returncode))
+                return False
+        except FileNotFoundError as f:
+            LOGGER.error('Executing "{}" returned  {}.'
+                         .format(' '.join(cmd), f))
+            return False
+        data, fs = soundfile.read(out_file.name)
+        aw = display(Audio(data=data, rate=fs, autoplay=True), display_id=True)
+        return aw
 
     
 def load_model(models_dir):
