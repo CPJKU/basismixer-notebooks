@@ -61,6 +61,7 @@ def construct_model(config, in_names, out_names, out_dir):
     model_cfg['args']['input_size'] = len(in_names)
     model_cfg['args']['output_names'] = out_names
     model_cfg['args']['output_size'] = len(out_names)
+    model_cfg['args']['input_type'] = 'onsetwise' if config['onsetwise'] else 'notewise'
     model_name = ('-'.join(out_names) +
                   '-' + ('onsetwise' if config['onsetwise'] else 'notewise'))
     model_out_dir = os.path.join(out_dir, model_name)
