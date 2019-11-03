@@ -16,7 +16,7 @@ import appdirs
 
 from basismixer.utils import pair_files
 
-TIMEOUT = 1
+TIMEOUT = 2
 REPO_NAME = 'vienna4x22_rematched'
 DATASET_BRANCH = 'master'
 OWNER = 'OFAI'
@@ -43,7 +43,6 @@ def load_cfg():
         CFG = {'last_dataset_dir': None}
         
 def save_cfg():
-    print('SAVECONFIG')
     with open(CFG_FILE, 'w') as f:
         json.dump(CFG, f)
 
@@ -62,12 +61,11 @@ def get_datasetdir():
         return os.path.join(TMP_DIR, repo_dirname)
         
     except urllib.error.URLError as e:
-        warnings.warn('{} (url: {})'.format(e, commit_url))
+        # warnings.warn('{} (url: {})'.format(e, commit_url))
         return CFG.get('last_dataset_dir', None)
     except Exception as e:
-        warnings.warn('{} (url: {})'.format(e, commit_url))
+        # warnings.warn('{} (url: {})'.format(e, commit_url))
         return CFG.get('last_dataset_dir', None)
-
 
     
 def init_dataset():
@@ -80,19 +78,23 @@ def init_dataset():
     status.clear_output()
 
     DATASET_DIR = get_datasetdir()
-    
-    if DATASET_DIR and os.path.exists(DATASET_DIR):
+
+    if DATASET_DIR is None:
+        status.append_stdout('No internet connection?\n')
+        
+    elif os.path.exists(DATASET_DIR):
 
         status.append_stdout('Vienna 4x22 Corpus already downloaded.\n')
         status.append_stdout('Data is in {}'.format(DATASET_DIR))
+
     else:
         status.append_stdout('Downloading Vienna 4x22 Corpus...')
         try:
             try:
-                urldata = urlopen(DATASET_URL, timeout=TIMEOUT).read()
+                urldata = urlopen(DATASET_URL).read()
             except urllib.error.URLError as e:
-                warnings.warn('{} (url: {})'.format(e, commit_url))
-                status.append_stdout('error\n')
+                # warnings.warn('{} (url: {})'.format(e, DATASET_URL))
+                status.append_stdout('error. No internet connection?\n')
                 return
 
             with tarfile.open(fileobj=io.BytesIO(urldata)) as archive:
@@ -106,11 +108,11 @@ def init_dataset():
                 
         except Exception as e:
             status.append_stdout('\nError: {}'.format(e))
-            return
+            return None
         status.append_stdout('done\nData is in {}'.format(DATASET_DIR))
     
     if DATASET_DIR is None:
-        return
+        return None
     
     folders = dict(musicxml=os.path.join(DATASET_DIR, 'musicxml'),
                    match=os.path.join(DATASET_DIR, 'match'))
@@ -130,6 +132,7 @@ def init_dataset():
                                if m])
     PIECES = sorted(set(pieces))
     PERFORMERS = sorted(set(performers))
+
 
 if __name__ == '__main__':
     init_dataset()
