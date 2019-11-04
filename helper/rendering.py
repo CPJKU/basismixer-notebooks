@@ -33,10 +33,10 @@ def render_midi(midi_fn):
         cmd = ['timidity', '-E', 'F', 'reverb=0', 'F', 'chorus=0',
                '--output-mono', '-Ov', '-o', out_file.name, midi_fn]
         try:
-            ps = subprocess.run(cmd, stdout=subprocess.PIPE)
+            ps = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             if ps.returncode != 0:
-                LOGGER.error('Command {} failed with code {}'
-                             .format(cmd, ps.returncode))
+                LOGGER.error('Command {} failed with code {} (stderr: {})'
+                             .format(cmd, ps.returncode, ps.stderr.decode('UTF8')))
                 return False
         except FileNotFoundError as f:
             LOGGER.error('Executing "{}" returned  {}.'
