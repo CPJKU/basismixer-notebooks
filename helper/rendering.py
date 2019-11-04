@@ -15,9 +15,15 @@ from basismixer.predictive_models import FullPredictiveModel, construct_model
 from basismixer.performance_codec import get_performance_codec
 from basismixer.basisfunctions import make_basis
 
-from helper.predictions import setup_output_directory as path_to_trained_models
+from helper.predictions import setup_output_directory
 
-
+def path_to_trained_models(path=setup_output_directory()):
+    if not os.path.exists(path):
+        print('Models not found! Using sample models')
+        path = './sample_data/models'
+    return path
+    
+    
 def render_midi(midi_fn):
 
     with tempfile.NamedTemporaryFile() as out_file:
