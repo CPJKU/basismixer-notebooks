@@ -54,14 +54,17 @@ def plot_predictions_and_targets(predictions, targets):
     fig.tight_layout()
 
 
-def plot_predictions(predictions):
-    param_names = predictions.dtype.names
+def plot_predictions(predictions, onsets=None,
+                     param_names=None):
+
+    if param_names is None:
+        param_names = predictions.dtype.names
     fig, axs = plt.subplots(len(param_names),
                             sharex=True,
                             gridspec_kw={'hspace': 0.15})
     plt.subplots_adjust(left=0.07, right=0.99, top=.99, bottom=0.1)
 
-    make_plot(fig, axs, predictions)
+    make_plot(fig, axs, predictions[param_names], onsets)
     
    
 

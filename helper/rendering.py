@@ -10,10 +10,12 @@ import tempfile
 from IPython.display import display, Audio
 
 from partitura import save_performance_midi, load_musicxml
-from partitura.score import expand_grace_notes
+from partitura.score import expand_grace_notes, unfold_part_maximal
 from basismixer.predictive_models import FullPredictiveModel, construct_model
 from basismixer.performance_codec import get_performance_codec
 from basismixer.basisfunctions import make_basis
+
+from helper.predictions import setup_output_directory as path_to_trained_models
 
 
 def render_midi(midi_fn):
@@ -54,9 +56,29 @@ def load_model(models_dir):
     input_names = list(set([name for in_name in [m.input_names for m in models] for name in in_name]))
     input_names.sort()
     output_names.sort()
-    full_model = FullPredictiveModel(models, input_names, output_names)
+
+    default_values = dict(
+        velocity_trend=64,
+        velocity_dev=0,
+        beat_period_standardized=0,
+        timing=0,
+        articulation_log=0,
+        beat_period_mean=0.5,
+        beat_period_std=0.1)
+    all_output_names = list(default_values.keys())
+    full_model = FullPredictiveModel(models, input_names,
+                                     all_output_names, default_values)
+
+    not_in_model_names = set(all_output_names).difference(output_names)
     
-    return full_model
+    print('Trained models include the following parameters:\n'
+          + '\n'.join(output_names) + '\n\n'
+          'The following parameters will use default values:\n'+
+          '\n' + '\n'.join(['{0}:{1:.2f}'.format(k, default_values[k])
+                            for k in not_in_model_names]))
+
+    
+    return full_model, output_names
 
 def sanitize_performed_part(ppart):
     """Avoid negative durations in notes.
@@ -73,13 +95,17 @@ def sanitize_performed_part(ppart):
 
 def post_process_predictions(predictions):
     max_articulation = 1.5
-    max_bps = 1.5
+    max_bps = 1
     max_timing = 0.2
-    predictions['articulation_log'] = np.clip(predictions['articulation_log'], -max_articulation, max_articulation)
+    predictions['articulation_log'] = np.clip(predictions['articulation_log'],
+                                              -max_articulation, max_articulation)
     predictions['velocity_dev'] = np.clip(predictions['velocity_dev'], 0, 0.8)
-    predictions['beat_period_standardized'] = np.clip(predictions['beat_period_standardized'], -max_bps, max_bps)
-    predictions['timing'] = np.clip(predictions['timing'], -max_timing, max_timing)
+    predictions['beat_period_standardized'] = np.clip(predictions['beat_period_standardized'],
+                                                      -max_bps, max_bps)
+    predictions['timing'] = np.clip(predictions['timing'],
+                                    -max_timing, max_timing)
     predictions['velocity_trend'][predictions['velocity_trend'] > 0.8] = 0.8
+    
 
 
 
@@ -87,6 +113,7 @@ def compute_basis_from_xml(xml_fn, input_names):
     # Load MusicXML file
     part = load_musicxml(xml_fn, force_note_ids=True)
     expand_grace_notes(part)
+    part = unfold_part_maximal(part)
 
     # Compute basis functions
     _basis, bf_names = make_basis(part, list(set([bf.split('.')[0] for bf in input_names])))
