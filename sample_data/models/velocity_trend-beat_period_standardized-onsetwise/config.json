@@ -1,10 +1,12 @@
 {
   "constructor": [
     "basismixer.predictive_models",
-    "FeedForwardModel"
+    "RecurrentModel"
   ],
   "args": {
-    "hidden_size": 128,
+    "recurrent_size": 128,
+    "n_layers": 1,
+    "hidden_size": 64,
     "input_names": [
       "polynomial_pitch_basis.pitch",
       "polynomial_pitch_basis.pitch^2",
@@ -27,6 +29,9 @@
       "slur_basis.slur_incr",
       "slur_basis.slur_decr",
       "fermata_basis.fermata",
+      "grace_basis.grace_note",
+      "grace_basis.n_grace",
+      "grace_basis.grace_pos",
       "metrical_basis.metrical_3_4_0",
       "metrical_basis.metrical_3_4_1",
       "metrical_basis.metrical_3_4_weak",
@@ -42,12 +47,12 @@
       "metrical_basis.metrical_2_4_weak",
       "metrical_basis.metrical_2_4_1"
     ],
-    "input_size": 35,
+    "input_size": 38,
     "output_names": [
-      "velocity_dev",
-      "timing",
-      "articulation_log"
+      "velocity_trend",
+      "beat_period_standardized"
     ],
-    "output_size": 3
+    "output_size": 2,
+    "input_type": "onsetwise"
   }
 }
