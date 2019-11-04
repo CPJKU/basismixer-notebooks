@@ -6,6 +6,7 @@ import numpy as np
 import subprocess
 import soundfile
 import tempfile
+import logging
 
 from IPython.display import display, Audio
 
@@ -16,6 +17,8 @@ from basismixer.performance_codec import get_performance_codec
 from basismixer.basisfunctions import make_basis
 
 from helper.predictions import setup_output_directory
+
+LOGGER = logging.getLogger(__name__)
 
 def path_to_trained_models(path=setup_output_directory()):
     if not os.path.exists(path):
