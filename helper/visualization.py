@@ -8,7 +8,7 @@ import os
 import logging
 from urllib.request import urlopen
 
-from IPython.display import display, HTML, Audio, update_display
+from IPython.display import display, HTML, Audio, update_display, Image
 # from ipywidgets import interact, interactive, fixed
 import ipywidgets as widgets
 import matplotlib.pyplot as plt
@@ -32,7 +32,12 @@ PERF_CODEC = pc.PerformanceCodec(pc.TimeCodec(normalization='beat_period_standar
 
 plt.rcParams.update({'font.size': 8})
 
+def show_score(piece):
+    if isinstance(piece, int):
+        piece = data.PIECES[piece]
+    display(Image(os.path.join(data.DATASET_DIR, 'png', '{}.png'.format(piece))))
 
+    
 def load_performance_audio(piece, performer):
     url = '{}{}_{}.ogg'.format(OGG_URL_BASE, piece, performer)
     try:
