@@ -96,10 +96,10 @@ def sanitize_performed_part(ppart):
     for n in ppart.notes:
 
         if n['note_off'] < n['note_on']:
-            n['note_off'] == n['note_on']
+            n['note_off'] = n['note_on']
 
         if n['sound_off'] < n['note_off']:
-            n['sound_off'] == n['note_off']
+            n['sound_off'] = n['note_off']
 
 
 def post_process_predictions(predictions):
