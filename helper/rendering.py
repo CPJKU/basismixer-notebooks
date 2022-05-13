@@ -14,7 +14,7 @@ from partitura import save_performance_midi, load_musicxml
 from partitura.score import expand_grace_notes, unfold_part_maximal
 from basismixer.predictive_models import FullPredictiveModel, construct_model
 from basismixer.performance_codec import get_performance_codec
-from basismixer.basisfunctions import make_basis
+from partitura.musicanalysis import make_note_feats
 
 from helper.predictions import setup_output_directory
 
@@ -125,7 +125,7 @@ def compute_basis_from_xml(xml_fn, input_names):
     part = unfold_part_maximal(part)
 
     # Compute basis functions
-    _basis, bf_names = make_basis(part, list(set([bf.split('.')[0] for bf in input_names])))
+    _basis, bf_names = make_note_feats(part, list(set([bf.split('.')[0] for bf in input_names])))
     basis = np.zeros((len(_basis), len(input_names)))
     for i, n in enumerate(input_names):
         try:
